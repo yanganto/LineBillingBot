@@ -1,4 +1,5 @@
 from __future__ import print_function
+import json
 
 from google.oauth2 import service_account
 from apiclient import discovery
@@ -7,23 +8,28 @@ from flask import Flask, request, abort
 
 
 from linebot import (
-    LineBotApi, WebhookHandler
+    LineBotApi
+    # WebhookHandler
 )
 from linebot.exceptions import (
     InvalidSignatureError
 )
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
+    # MessageEvent, 
+    # TextMessage, 
+    TextSendMessage
 )
 
 from config import (
     SCOPES,
     SERVICE_ACCOUNT_FILE,
-    APPLICATION_NAME,
+    # APPLICATION_NAME,
     SPREADSHEET_ID,
     SHEET_TAB,
-    LINE_CHANNEL_ID,
-    LINE_CHANNEL_SECRET
+    # LINE_CHANNEL_ID,
+    # LINE_CHANNEL_SECRET,
+    LINE_CALLBACK_URI,
+    LINE_CHANNEL_ACCESS_TOKEN
 )
 
 app = Flask(__name__)
@@ -35,8 +41,8 @@ try:
 except ImportError:
     flags = None
 
-line_bot_api = LineBotApi(LINE_CHANNEL_SECRET)
-handler = WebhookHandler(LINE_CHANNEL_ID)
+line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
+#handler = WebhookHandler(LINE_CHANNEL_ID)
 
 
 def get_credentials():
@@ -67,12 +73,11 @@ def write():
             # Print columns A and E, which correspond to indices 0 and 4.
             print('%s' % (row[0]))
 
-
-
-@app.route("/callback", methods=['POST'])
+@app.route(LINE_CALLBACK_URI, methods=['POST'])
 def callback():
+    # TODO: validate by Signature
     # get X-Line-Signature header value
-    signature = request.headers['X-Line-Signature']
+    # signature = request.headers.get('X-Line-Signature')
 
     # get request body as text
     body = request.get_data(as_text=True)
@@ -80,22 +85,17 @@ def callback():
 
     # handle webhook body
     try:
-        handler.handle(body, signature)
-    except InvalidSignatureError:
+        line_bot_api.reply_message(json.loads(body)['events'][0]['replyToken'],
+        TextSendMessage(text='I got it!'))
+    except InvalidSignatureError as e:
+        print(e)
         abort(400)
+
 
     return 'OK'
 
 
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=event.message.text))
-
-
 if __name__ == "__main__":
-    write()
-    # app.run()
+    app.run()
 
 
