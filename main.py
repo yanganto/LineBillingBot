@@ -65,7 +65,7 @@ def write(*args):
         spreadsheetId=SPREADSHEET_ID, range=f"{SHEET_TAB}!A2:C3",
         valueInputOption="RAW",
         body=dict(values=[
-            [datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args[0], int(args[1]), ' '.join(args[2:])if len(args) > 3 else ""]])).execute()
+            [datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args[0], int(args[1]), ' '.join(args[2:])if len(args) > 2 else ""]])).execute()
     print('{0} cells updated.'.format(result['updates'].get('updatedCells')))
 
 
@@ -97,6 +97,7 @@ def callback():
 
 
 if __name__ == "__main__":
-    app.run()
+    #app.run()
+    write(*("meal 50 test".split()))
 
 
