@@ -97,7 +97,6 @@ def callback():
 
 
 if __name__ == "__main__":
-    #app.run()
-    write(*("meal 50 test".split()))
+    app.run()
 
 
