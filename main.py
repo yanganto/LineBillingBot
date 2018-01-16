@@ -1,5 +1,6 @@
 from __future__ import print_function
 import json
+from datetime import datetime
 
 from google.oauth2 import service_account
 from apiclient import discovery
@@ -53,31 +54,26 @@ def get_credentials():
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
     return credentials
 
-def write():
+def write(*args):
     """Write the billinge to Spread sheet
     """
     service = discovery.build('sheets', 'v4', 
             credentials=get_credentials(),
             discoveryServiceUrl=('https://sheets.googleapis.com/$discovery/rest?version=v4'))
 
-    rangeName = f"{SHEET_TAB}!A1:10"
-    result = service.spreadsheets().values().get(
-        spreadsheetId=SPREADSHEET_ID, range=rangeName).execute()
-    values = result.get('values', [])
+    result = service.spreadsheets().values().append(
+        spreadsheetId=SPREADSHEET_ID, range=f"{SHEET_TAB}!A2:C3",
+        valueInputOption="RAW",
+        body=dict(values=[
+            [datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args[0], int(args[1]), ' '.join(args[2:])if len(args) > 3 else ""]])).execute()
+    print('{0} cells updated.'.format(result['updates'].get('updatedCells')))
 
-    if not values:
-        print('No data found.')
-    else:
-        print('Name, Major:')
-        for row in values:
-            # Print columns A and E, which correspond to indices 0 and 4.
-            print('%s' % (row[0]))
 
 @app.route(LINE_CALLBACK_URI, methods=['POST'])
 def callback():
     # TODO: validate by Signature
     # get X-Line-Signature header value
-    # signature = request.headers.get('X-Line-Signature')
+    signature = request.headers['X-Line-Signature']
 
     # get request body as text
     body = request.get_data(as_text=True)
@@ -85,8 +81,13 @@ def callback():
 
     # handle webhook body
     try:
-        line_bot_api.reply_message(json.loads(body)['events'][0]['replyToken'],
-        TextSendMessage(text='I got it!'))
+        for e in json.loads(body)['events']:
+            write(*(e['message']['text'].split()))
+
+            line_bot_api.reply_message(e['replyToken'],
+            TextSendMessage(text="OK"))
+
+
     except InvalidSignatureError as e:
         print(e)
         abort(400)
