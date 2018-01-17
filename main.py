@@ -65,7 +65,7 @@ def write(*args):
             discoveryServiceUrl=('https://sheets.googleapis.com/$discovery/rest?version=v4'))
 
     result = service.spreadsheets().values().append(
-        spreadsheetId=SPREADSHEET_ID, range=f"{SHEET_TAB}!A2:C3",
+        spreadsheetId=SPREADSHEET_ID, range=f"{SHEET_TAB}!A2:D",
         valueInputOption="RAW",
         body=dict(values=[
             [
