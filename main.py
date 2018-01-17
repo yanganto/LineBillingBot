@@ -1,6 +1,7 @@
 from __future__ import print_function
 import json
 from datetime import datetime
+import pytz
 
 from google.oauth2 import service_account
 from apiclient import discovery
@@ -22,7 +23,6 @@ from linebot.models import (
 )
 
 from config import (
-    SCOPES,
     SERVICE_ACCOUNT_FILE,
     # APPLICATION_NAME,
     SPREADSHEET_ID,
@@ -30,8 +30,11 @@ from config import (
     # LINE_CHANNEL_ID,
     # LINE_CHANNEL_SECRET,
     LINE_CALLBACK_URI,
-    LINE_CHANNEL_ACCESS_TOKEN
+    LINE_CHANNEL_ACCESS_TOKEN,
+    TIME_ZONE_COUNTRY
 )
+
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 app = Flask(__name__)
 
@@ -65,7 +68,13 @@ def write(*args):
         spreadsheetId=SPREADSHEET_ID, range=f"{SHEET_TAB}!A2:C3",
         valueInputOption="RAW",
         body=dict(values=[
-            [datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args[0], int(args[1]), ' '.join(args[2:])if len(args) > 2 else ""]])).execute()
+            [
+                datetime.now(pytz.timezone(pytz.country_timezones(TIME_ZONE_COUNTRY)[0])).strftime("%Y-%m-%d %H:%M:%S"), 
+                args[0], 
+                int(args[1]), 
+                ' '.join(args[2:])if len(args) > 2 else ""
+            ]
+        ])).execute()
     print('{0} cells updated.'.format(result['updates'].get('updatedCells')))
 
 
@@ -77,7 +86,6 @@ def callback():
 
     # get request body as text
     body = request.get_data(as_text=True)
-    app.logger.info("Request body: " + body)
 
     # handle webhook body
     try:
